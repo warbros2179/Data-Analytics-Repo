@@ -1,0 +1,204 @@
+/* Name: David Ocampo 
+Category/Vendor of Choice: Gin 
+Instructions: Copy and paste the below questions into your script. 
+Below each question, write your response, including relevant SQL queries. 
+Make sure the questions and plain-language answers are commented out! */
+
+
+
+-- 1. Create a list of all transactions for your chosen [Category/Vendor] that
+-- took place in the last quarter of 2014, sorted by the total sale amount from highest to lowest.
+SELECT *
+FROM public.sales
+
+SELECT date, category_name, total :: money 
+FROM public.sales
+WHERE category_name ILIKE '%GINS%'
+	AND date BETWEEN '2014-10-01' AND '2014-12-31'
+ORDER BY total DESC 
+
+-- 2. Which transactions for your [Category/Vendor] had a bottle quantity greater than 12? 
+-- Display the date, store number, item description, and total amount.
+
+SELECT category_name, date, store, description, bottle_qty, total
+FROM public.sales
+WHERE bottle_qty > '12'
+	AND category_name ILIKE '%GINS%'
+
+-- 3. Find all products in the products_table whose item_description contains a specific 
+-- keyword (e.g., 'Limited', 'Spiced'). What categories do they belong to?
+
+SELECT category_name,item_description
+FROM public.products
+WHERE item_description ILIKE '%limited%'
+	OR item_description ILIKE '%spiced%'
+	OR item_description ILIKE '%premium%'
+	OR item_description ILIKE '%rare%'
+
+-- 4. What is the total sales revenue and the average bottle price (btl_price) for 
+-- your chosen [Category/Vendor]? 
+
+SELECT category_name, SUM(total) :: money AS total_revenue, ROUND(AVG(btl_price :: numeric), 2)
+FROM public.sales
+WHERE category_name ILIKE '%Gins%'
+GROUP BY 1
+
+-- 5. How many transactions were recorded for each specific item description within your 
+-- chosen [Category]? Which specific product is the most frequently purchased?
+
+SELECT description, COUNT (item)
+FROM public.sales
+WHERE category_name ILIKE '%GINS%'
+GROUP BY 1
+ORDER BY COUNT (item) DESC
+
+-- 6. Which store generated the highest total revenue for your [Category/Vendor]? 
+-- Which generated the lowest (but still greater than zero)?
+
+--Highest Revenue 
+SELECT st.name, SUM(total) :: money 
+FROM public.sales AS s
+JOIN public.stores AS st ON st.store=s.store
+WHERE category_name ILIKE '%GINS%'
+GROUP BY 1
+ORDER BY SUM(total) DESC LIMIT 1
+-- "Hy-vee #3 / Bdi / Des Moines"	"$423,724.21"
+
+-- Lowest Revenue
+SELECT st.name, SUM(total) :: money 
+FROM public.sales AS s
+JOIN public.stores AS st ON st.store=s.store
+WHERE category_name ILIKE '%GINS%'
+GROUP BY 1
+ORDER BY SUM(total) ASC LIMIT 1
+
+--Top 5 stores with highest revenue 
+SELECT st.name AS store_name, SUM(total) :: money AS total_revenue
+FROM public.sales AS s
+JOIN public.stores AS st ON st.store=s.store
+WHERE category_name ILIKE '%GINS%'
+GROUP BY 1
+ORDER BY SUM(total) DESC LIMIT 5
+
+--"Hy-vee #3 / Bdi / Des Moines"	"$423,724.21"
+"Central City 2"	"$358,173.00"
+"Costco Wholesale #788"	"$289,172.22"
+"Sam's Club 6344 / Windsor Heights"	"$229,312.52"
+"Hy-vee Wine and Spirits / Iowa City"	"$211,766.07"
+
+-- 7. What is the total revenue for every vendor within your chosen [Category],
+-- sorted from highest to lowest?
+
+SELECT vendor, SUM(total) :: money AS total_revenue 
+FROM public.sales
+WHERE category_name ILIKE '%GINS%'
+GROUP BY 1
+ORDER BY SUM(total) DESC 
+
+-- 8. Which stores had total sales revenue for your [Category/Vendor] exceeding $2,000? 
+-- (Hint: Use HAVING to filter aggregated store totals).
+
+SELECT st.name, SUM(total) :: money AS total_revenue 
+FROM public.sales AS s
+JOIN public.stores AS st ON st.store=s.store
+WHERE category_name ILIKE '%GINS%'
+GROUP BY 1
+HAVING SUM (total) > 2000
+ORDER BY 2 DESC
+
+-- 9. Find all sales records where the category_name is either your chosen category 
+-- or a closely related competitor category (e.g., 'VODKA 80 PROOF' vs 'IMPORTED VODKA').
+
+SELECT category_name, SUM (total) :: money 
+FROM public.sales
+WHERE category_name ILIKE '%GINS%'
+GROUP BY 1
+ORDER BY 2 DESC
+
+-- The 3 categories with all sales records
+-- "IMPORTED DRY GINS"	"$5,390,667.36"
+-- "AMERICAN DRY GINS"	"$5,267,718.79"
+-- "AMERICAN SLOE GINS"	"$69,648.44"
+
+SELECT DISTINCT category_name, SUM(total) :: money AS total_revenue
+FROM public.sales
+WHERE category_name ILIKE '%GINS%' 
+	OR category_name ILIKE '%VODKA%'
+GROUP BY 1
+ORDER BY 2 DESC
+
+-- Gin
+SELECT SUM(total) :: money AS total_revenue 
+FROM public.sales
+WHERE category_name ILIKE '%GINS%'
+--"$10,728,034.59"
+
+-- Vodka
+SELECT SUM(total) :: money AS total_revenue
+FROM public.sales
+WHERE category_name ILIKE '%VODKA%'
+--"$92,993,705.16"
+
+-- 10. List all transactions where the state bottle cost was between $10 and $20 for 
+-- your [Category/Vendor].
+
+SELECT DISTINCT state_btl_cost 
+FROM public.sales
+WHERE category_name ILIKE '%GINS%' 
+	AND state_btl_cost BETWEEN 10 AND 20
+	
+-- 11. Write a query that displays each store's total sales for your [Category/Vendor] 
+-- along with the store's name and address from the stores_table.
+
+SELECT st.name AS store_name, st.store_address, SUM (total) :: money AS total_sales
+FROM public.sales AS s
+JOIN public.stores AS st ON st.store=s.store
+WHERE category_name ILIKE '%GINS%'
+GROUP BY 1,2
+ORDER BY 3 DESC
+
+-- 12. For each sale in your [Category], display the transaction date, total amount, 
+-- and the population of the county where the sale occurred by joining with counties_table.
+
+SELECT s.county, c.population, s.date, SUM(s.total) :: money 
+FROM public.sales AS s
+JOIN public.counties AS c ON c.county=s.county 
+WHERE category_name ILIKE '%GINS%'
+GROUP BY 1,2,3
+ORDER By 4 DESC
+
+-- How much revnue we generated in total
+
+SELECT SUM(total) :: money AS total_revenue 
+FROM public.sales
+WHERE category_name ILIKE '%GINS%'
+-- "$10,728,034.59"
+
+-- Store partnerships
+SELECT st.name
+FROM public.stores AS st
+JOIN public.sales AS s ON s.store=st.store
+WHERE category_name ILIKE '%GINS%'
+-- 114,390
+
+-- Best Performing Counties
+SELECT s.county, SUM(s.total) :: money 
+FROM public.sales AS s
+JOIN public.counties AS c ON c.county=s.county 
+WHERE category_name ILIKE '%GINS%'
+GROUP BY 1
+ORDER By 2 DESC LIMIT 5
+-- Worst Performing Counties 
+SELECT s.county, SUM(s.total) :: money 
+FROM public.sales AS s
+JOIN public.counties AS c ON c.county=s.county 
+WHERE category_name ILIKE '%GINS%'
+GROUP BY 1
+ORDER By 2 ASC LIMIT 5
+
+SELECT s.county, c.population, SUM(s.total) :: money 
+FROM public.sales AS s
+JOIN public.counties AS c ON c.county=s.county 
+WHERE category_name ILIKE '%GINS%'
+GROUP BY 1, 2
+ORDER By 2 DESC LIMIT 4
